@@ -930,6 +930,10 @@ void __dwarf_type_iter (CPUState *cpu, target_ulong base_addr, LocType loc_t,
                             if (0 == strcmp("unsigned char", die_name) ||
                                 0 == strcmp("char", die_name) ||
                                 0 == strcmp("u_char", die_name) ||
+                                0 == strcmp("uint16_t", die_name) ||
+                                0 == strcmp("int16_t", die_name) ||
+                                0 == strcmp("uint8_t", die_name) ||
+                                0 == strcmp("int8_t", die_name) ||
                                 0 == strcmp("signed char", die_name)){
                                 if (debug)
                                     printf("Querying: char-type %s  %s\n", die_name, cur_astnodename.c_str());

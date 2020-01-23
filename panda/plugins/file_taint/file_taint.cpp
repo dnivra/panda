@@ -314,6 +314,26 @@ void linux_pread_return(CPUState *cpu, target_ulong pc, uint32_t fd,
     linux_read_return(cpu, pc, fd, buf, count);
 }
 
+void linux_mmap_enter(CPUState* cpu, target_ulong pc, uint32_t addr, uint32_t len, uint32_t prot, uint32_t flags, uint32_t fd, uint32_t pgoff) {
+    if (fd == -1) return;
+    OsiProc *proc = get_current_process(cpu);
+    // The filename in Linux should always be absolute.
+    char *filename = osi_linux_fd_to_filename(cpu, proc, fd);
+    //fprintf(stderr, "enter mmap: fd = %d, filename = %s\n", fd, filename);
+    uint64_t pos = osi_linux_fd_to_pos(cpu, proc, fd);
+    read_enter(filename, fd, pos);
+    g_free(filename);
+    free_osiproc(proc);
+}
+
+void linux_mmap_return(CPUState* cpu, target_ulong pc, uint32_t addr, uint32_t len, uint32_t prot, uint32_t flags, uint32_t fd, uint32_t pgoff) {
+    CPUArchState *env = (CPUArchState *)cpu->env_ptr;
+    target_ulong maddr = env->regs[R_EAX];
+    if (maddr == -1 || fd == -1) return;
+    //fprintf(stderr, "return mmap: addr = %x\n", maddr);
+    read_return(fd, len, maddr);
+}
+
     bool init_plugin(void *self)
 {
     // Parse arguments for file_taint
@@ -367,6 +387,8 @@ void linux_pread_return(CPUState *cpu, target_ulong pc, uint32_t fd,
         PPP_REG_CB("syscalls2", on_sys_read_return, linux_read_return);
         PPP_REG_CB("syscalls2", on_sys_pread64_enter, linux_pread_enter);
         PPP_REG_CB("syscalls2", on_sys_pread64_return, linux_pread_return);
+        PPP_REG_CB("syscalls2", on_sys_mmap_pgoff_enter, linux_mmap_enter);
+        PPP_REG_CB("syscalls2", on_sys_mmap_pgoff_return, linux_mmap_return);
 
         panda_require("osi_linux");
         assert(init_osi_linux_api());
